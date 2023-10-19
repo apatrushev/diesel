@@ -64,6 +64,36 @@ impl RawConnection {
         RawResult::new(PQexec(self.internal_connection.as_ptr(), query), self)
     }
 
+    pub(super) unsafe fn send_query(
+        &self,
+        query: *const libc::c_char,
+        param_count: libc::c_int,
+        param_types: *const Oid,
+        param_values: *const *const libc::c_char,
+        param_lengths: *const libc::c_int,
+        param_formats: *const libc::c_int,
+        result_format: libc::c_int,
+    ) -> QueryResult<()> {
+        let res = PQsendQueryParams(
+            self.internal_connection.as_ptr(),
+            query,
+            param_count,
+            param_types,
+            param_values,
+            param_lengths,
+            param_formats,
+            result_format,
+        );
+        if res == 1 {
+            Ok(())
+        } else {
+            Err(Error::DatabaseError(
+                DatabaseErrorKind::UnableToSendCommand,
+                Box::new(self.last_error_message()),
+            ))
+        }
+    }
+
     pub(super) unsafe fn send_query_prepared(
         &self,
         stmt_name: *const libc::c_char,

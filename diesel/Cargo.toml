@@ -70,6 +70,7 @@ nightly-error-messages = []
 r2d2 = ["diesel_derives/r2d2", "dep:r2d2"]
 chrono = ["diesel_derives/chrono", "dep:chrono"]
 time = ["diesel_derives/time", "dep:time"]
+pgbouncer = ["postgres"]
 
 [package.metadata.docs.rs]
 features = ["postgres", "mysql", "sqlite", "extras"]
