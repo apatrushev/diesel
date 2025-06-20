@@ -8,6 +8,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw as libc;
 use std::ptr::NonNull;
 use std::{ptr, str};
+use tracing::instrument;
 
 use crate::result::*;
 
@@ -19,6 +20,7 @@ pub(super) struct RawConnection {
 }
 
 impl RawConnection {
+    #[instrument(skip_all)]
     pub(super) fn establish(database_url: &str) -> ConnectionResult<Self> {
         let connection_string = CString::new(database_url)?;
         let connection_ptr = unsafe { PQconnectdb(connection_string.as_ptr()) };
@@ -46,10 +48,12 @@ impl RawConnection {
         }
     }
 
+    #[instrument(skip_all)]
     pub(super) fn last_error_message(&self) -> String {
         last_error_message(self.internal_connection.as_ptr())
     }
 
+    #[instrument(skip_all)]
     pub(super) fn set_notice_processor(&self, notice_processor: NoticeProcessor) {
         unsafe {
             PQsetNoticeProcessor(
@@ -60,10 +64,12 @@ impl RawConnection {
         }
     }
 
+    #[instrument(skip_all)]
     pub(super) unsafe fn exec(&self, query: *const libc::c_char) -> QueryResult<RawResult> {
         RawResult::new(PQexec(self.internal_connection.as_ptr(), query), self)
     }
 
+    #[instrument(skip_all)]
     pub(super) unsafe fn send_query(
         &self,
         query: *const libc::c_char,
@@ -94,6 +100,7 @@ impl RawConnection {
         }
     }
 
+    #[instrument(skip_all)]
     pub(super) unsafe fn send_query_prepared(
         &self,
         stmt_name: *const libc::c_char,
@@ -122,6 +129,7 @@ impl RawConnection {
         }
     }
 
+    #[instrument(skip_all)]
     pub(super) unsafe fn prepare(
         &self,
         stmt_name: *const libc::c_char,
@@ -141,14 +149,17 @@ impl RawConnection {
 
     /// This is reasonably inexpensive as it just accesses variables internal to the connection
     /// that are kept up to date by the `ReadyForQuery` messages from the PG server
+    #[instrument(skip_all)]
     pub(super) fn transaction_status(&self) -> PgTransactionStatus {
         unsafe { PQtransactionStatus(self.internal_connection.as_ptr()) }.into()
     }
 
+    #[instrument(skip_all)]
     pub(super) fn get_status(&self) -> ConnStatusType {
         unsafe { PQstatus(self.internal_connection.as_ptr()) }
     }
 
+    #[instrument(skip_all)]
     pub(crate) fn get_next_result(&self) -> Result<Option<PgResult>, Error> {
         let res = unsafe { PQgetResult(self.internal_connection.as_ptr()) };
         if res.is_null() {
@@ -159,6 +170,7 @@ impl RawConnection {
         }
     }
 
+    #[instrument(skip_all)]
     pub(crate) fn enable_row_by_row_mode(&self) -> QueryResult<()> {
         let res = unsafe { PQsetSingleRowMode(self.internal_connection.as_ptr()) };
         if res == 1 {
